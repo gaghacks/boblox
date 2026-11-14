@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Melee ISO Web Loader</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #0d0f14;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    #loader-ui {
+      text-align: center;
+      background: #161a23;
+      border: 2px dashed #3b82f6;
+      border-radius: 16px;
+      padding: 40px 32px;
+      max-width: 460px;
+      width: 90%;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+    }
+    #loader-ui.dragover {
+      background: #1e2536;
+      border-color: #60a5fa;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: #f8fafc;
+    }
+    p {
+      font-size: 0.92rem;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .btn {
+      display: inline-block;
+      background: #3b82f6;
+      color: #fff;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #2563eb;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    #status {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: #38bdf8;
+    }
+    #game-wrapper {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+    }
+    #game {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Local ISO File Picker Screen -->
+  <div id="loader-ui">
+    <h1>GameCube / Melee Web Loader</h1>
+    <p>Select or drag &amp; drop your local <strong>.iso</strong> file. Everything runs locally in your browser—nothing is uploaded.</p>
+    <label class="btn" for="iso-input">Choose .ISO File</label>
+    <input type="file" id="iso-input" accept=".iso,.gcm,.rvz,.ciso">
+    <div id="status"></div>
+  </div>
+
+  <!-- Fullscreen Emulator Container -->
+  <div id="game-wrapper">
+    <div id="game"></div>
+  </div>
+
+  <script>
+    const loaderUI = document.getElementById('loader-ui');
+    const isoInput = document.getElementById('iso-input');
+    const statusText = document.getElementById('status');
+    const gameWrapper = document.getElementById('game-wrapper');
+
+    function launchISO(file) {
+      if (!file) return;
+
+      statusText.textContent = `Loading ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`;
+
+      // Create a local memory URL so the browser does not upload the 1.4GB file
+      const blobUrl = URL.createObjectURL(file);
+
+      // Hide picker and show fullscreen canvas
+      loaderUI.style.display = 'none';
+      gameWrapper.style.display = 'block';
+
+      // Configure EmulatorJS to load the GameCube WebAssembly core via jsDelivr
+      window.EJS_player = '#game';
+      window.EJS_core = 'gc';
+      window.EJS_gameName = file.name.replace(/\.[^/.]+$/, "");
+      window.EJS_gameUrl = blobUrl;
+      window.EJS_pathtodata = 'https://jsdelivr.net';
+      window.EJS_startOnLoaded = true;
+
+      // Inject the loader script dynamically after the ISO is selected
+      const script = document.createElement('script');
+      script.src = 'https://jsdelivr.netloader.js';
+      document.body.appendChild(script);
+    }
+
+    // Handle button selection
+    isoInput.addEventListener('change', (e) => {
+      launchISO(e.target.files[0]);
+    });
+
+    // Handle drag-and-drop
+    loaderUI.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      loaderUI.classList.add('dragover');
+    });
+    loaderUI.addEventListener('dragleave', () => {
+      loaderUI.classList.remove('dragover');
+    });
+    loaderUI.addEventListener('drop', (e) => {
+      e.preventDefault();
+      loaderUI.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        launchISO(e.dataTransfer.files[0]);
+      }
+    });
+  </script>
+
+</body>
+</html>
